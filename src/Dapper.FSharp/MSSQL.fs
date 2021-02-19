@@ -61,7 +61,7 @@ module private Evaluators =
         | { Take = None; Skip = x } when x <= 0 -> ""
         | { Take = None; Skip = o } -> sprintf "OFFSET %i ROWS" o
         | { Take = Some f; Skip = o } -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
-    
+
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
@@ -69,7 +69,7 @@ module private Evaluators =
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
-    
+
     let evalAggregates (ags:Aggregate list) =
         let comparableName (column:string) (alias:string) =
             match column.Split '.' with
@@ -84,27 +84,33 @@ module private Evaluators =
         | Min (column,alias) -> comparableName column alias, sprintf "MIN(%s) AS %s" column alias
         | Max (column,alias) -> comparableName column alias, sprintf "MAX(%s) AS %s" column alias
         )
-    
+
     let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
-        aggr 
+        aggr
         |> List.tryPick (fun (aggrColumn, replace) -> if aggrColumn = field then Some replace else None)
         |> Option.defaultValue (inBrackets field)
-    
+
     let evalGroupBy (cols:string list) =
         cols
         |> String.concat ", "
-    
+
     let evalSelectQuery fields meta (q:SelectQuery) =
         let aggregates = q.Aggregates |> evalAggregates
         let fieldNames =
             fields
             |> List.map (replaceFieldWithAggregate aggregates)
             |> String.concat ", "
-            
+
+        let cteStart, cteEnd =
+            match q.WithCTEs with
+            | [] -> "", ""
+            | [one] -> (sprintf "WITH %s AS (" one.Table )    , ")"
+            | _ -> failwith "not implemented"
+
         // distinct
         let distinct = if q.Distinct then "DISTINCT " else ""
         // basic query
-        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames (safeTableName q.Schema q.Table))
+        let sb = StringBuilder(sprintf "%s%s\n SELECT %s%s FROM %s" cteStart cteEnd distinct fieldNames (safeTableName q.Schema q.Table))
         // joins
         let joins = evalJoins q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
@@ -121,7 +127,7 @@ module private Evaluators =
         let pagination = evalPagination q.Pagination
         if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
         sb.ToString()
-    
+
     let evalInsertQuery fields outputFields (q:InsertQuery<_>) =
         let fieldNames = fields |> List.map inBrackets |> String.concat ", " |> sprintf "(%s)"
         let values =
@@ -184,7 +190,7 @@ type IDbConnection with
 
     member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a> |> IDbConnection.query1<'a> this trans timeout logFunction
-      
+
     member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b> |> IDbConnection.query2<'a,'b> this trans timeout logFunction
 
@@ -199,10 +205,10 @@ type IDbConnection with
 
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout logFunction
-        
+
     member this.InsertOutputAsync<'Input, 'Output> (q:InsertQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insertOutput<'Input, 'Output> |> IDbConnection.query1<'Output> this trans timeout logFunction
-        
+
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout logFunction
 

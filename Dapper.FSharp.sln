@@ -4,6 +4,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Dapper.FSharp", "src\Dapper
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Dapper.FSharp.Tests", "tests\Dapper.FSharp.Tests\Dapper.FSharp.Tests.fsproj", "{626FF868-45FD-4836-BB92-6E1A428CC057}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Dapper.FSharp.CteDebug", "Dapper.FSharp.CteDebug\Dapper.FSharp.CteDebug.fsproj", "{86381441-F82A-44C8-8B45-A28617F53CDF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{626FF868-45FD-4836-BB92-6E1A428CC057}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{626FF868-45FD-4836-BB92-6E1A428CC057}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{626FF868-45FD-4836-BB92-6E1A428CC057}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86381441-F82A-44C8-8B45-A28617F53CDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86381441-F82A-44C8-8B45-A28617F53CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86381441-F82A-44C8-8B45-A28617F53CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86381441-F82A-44C8-8B45-A28617F53CDF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,5 +1,6 @@
 ﻿namespace Dapper.FSharp
 
+
 type OrderDirection =
     | Asc
     | Desc
@@ -40,7 +41,7 @@ type Pagination = {
     Skip : int
     Take : int option
 }
-    
+
 type Join =
     | InnerJoin of table:string * colName:string * equalsToColumn:string
     | LeftJoin of table:string * colName:string * equalsToColumn:string
@@ -57,7 +58,9 @@ type Aggregate =
     | Min of columnName:string * alias:string
     | Max of columnName:string * alias:string
 
+
 type SelectQuery = {
+    WithCTEs : CommonTableExpression list
     Schema : string option
     Table : string
     Where : Where
@@ -68,6 +71,12 @@ type SelectQuery = {
     GroupBy : string list
     Distinct : bool
 }
+
+and  CommonTableExpression = {
+    Table : string
+    SelectQuery : SelectQuery
+}
+
 
 type InsertQuery<'a> = {
     Schema : string option
