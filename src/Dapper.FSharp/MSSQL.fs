@@ -94,6 +94,35 @@ module private Evaluators =
         cols
         |> String.concat ", "
 
+    let evalCTESelectQuery fields meta (q:CTESelectQuery) =
+        let aggregates = q.Aggregates |> evalAggregates
+        let fieldNames =
+            fields
+            |> List.map (replaceFieldWithAggregate aggregates)
+            |> String.concat ", "
+
+        // distinct
+        let distinct = if q.Distinct then "DISTINCT " else ""
+        // basic query
+        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s"  distinct fieldNames (safeTableName q.Schema q.Table))
+        // joins
+        let joins = evalJoins q.Joins
+        if joins.Length > 0 then sb.Append joins |> ignore
+        // where
+        let where = evalWhere meta q.Where
+        if where.Length > 0 then sb.Append (sprintf " WHERE %s" where) |> ignore
+        // group by
+        let groupBy = evalGroupBy q.GroupBy
+        if groupBy.Length > 0 then sb.Append (sprintf " GROUP BY %s" groupBy) |> ignore
+        // order by
+        let orderBy = evalOrderBy q.OrderBy
+        if orderBy.Length > 0 then sb.Append (sprintf " ORDER BY %s" orderBy) |> ignore
+        // pagination
+        let pagination = evalPagination q.Pagination
+        if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
+        sb.ToString()
+
+
     let evalSelectQuery fields meta (q:SelectQuery) =
         let aggregates = q.Aggregates |> evalAggregates
         let fieldNames =
@@ -104,7 +133,8 @@ module private Evaluators =
         let cteStart, cteEnd =
             match q.WithCTEs with
             | [] -> "", ""
-            | [one] -> (sprintf "WITH %s AS (" one.Table )    , ")"
+            | [one] -> (sprintf "WITH %s AS ( %s" one.AsTableName (evalCTESelectQuery one.CTESelectQuery))
+                        , ")"
             | _ -> failwith "not implemented"
 
         // distinct
@@ -174,10 +204,10 @@ module private Evaluators =
 
 [<AbstractClass;Sealed>]
 type Deconstructor =
-    static member select<'a> (q:SelectQuery) = q |> GenericDeconstructor.select1<'a> Evaluators.evalSelectQuery
-    static member select<'a,'b> (q:SelectQuery) = q |> GenericDeconstructor.select2<'a,'b> Evaluators.evalSelectQuery
+    static member select<'a> (q:SelectQuery)       = q |> GenericDeconstructor.select1<'a>       Evaluators.evalSelectQuery
+    static member select<'a,'b> (q:SelectQuery)    = q |> GenericDeconstructor.select2<'a,'b>    Evaluators.evalSelectQuery
     static member select<'a,'b,'c> (q:SelectQuery) = q |> GenericDeconstructor.select3<'a,'b,'c> Evaluators.evalSelectQuery
-    static member insert (q:InsertQuery<'a>) = q |> GenericDeconstructor.insert Evaluators.evalInsertQuery
+    static member insert (q:InsertQuery<'a>)       = q |> GenericDeconstructor.insert Evaluators.evalInsertQuery
     static member insertOutput<'Input, 'Output> (q:InsertQuery<'Input>) = q |> GenericDeconstructor.insertOutput<'Input, 'Output> Evaluators.evalInsertQuery
     static member update<'a> (q:UpdateQuery<'a>) = q |> GenericDeconstructor.update<'a> Evaluators.evalUpdateQuery
     static member updateOutput<'Input, 'Output> (q:UpdateQuery<'Input>) = q |> GenericDeconstructor.updateOutput<'Input, 'Output> Evaluators.evalUpdateQuery

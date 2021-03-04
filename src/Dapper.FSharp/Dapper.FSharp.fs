@@ -58,9 +58,8 @@ type Aggregate =
     | Min of columnName:string * alias:string
     | Max of columnName:string * alias:string
 
-
-type SelectQuery = {
-    WithCTEs : CommonTableExpression list
+// CTE select query cannot take a CTE, thus it must be distinct type
+type CTESelectQuery = {
     Schema : string option
     Table : string
     Where : Where
@@ -72,11 +71,23 @@ type SelectQuery = {
     Distinct : bool
 }
 
-and  CommonTableExpression = {
-    Table : string
-    SelectQuery : SelectQuery
+type CTE = {
+    AsTableName : string
+    CTESelectQuery : CTESelectQuery
 }
 
+type SelectQuery = {
+    WithCTEs : CTE list
+    Schema : string option
+    Table : string
+    Where : Where
+    OrderBy : OrderBy list
+    Pagination : Pagination
+    Joins : Join list
+    Aggregates : Aggregate list
+    GroupBy : string list
+    Distinct : bool
+}
 
 type InsertQuery<'a> = {
     Schema : string option

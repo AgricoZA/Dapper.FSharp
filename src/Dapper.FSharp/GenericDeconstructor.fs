@@ -8,6 +8,15 @@ let private extractFieldsAndSplit<'a> (j:Join) =
 
 let private createSplitOn (xs:string list) = xs |> String.concat ","
 
+let CTESelect1<'a> evalSelectQuery (q:CTESelectQuery) =
+    let fields = typeof<'a> |> Reflection.getFields
+    // extract metadata
+    let meta = WhereAnalyzer.getWhereMetadata [] q.Where
+    let query : string = evalSelectQuery fields meta q
+    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
+    query, pars
+
+
 let select1<'a> evalSelectQuery (q:SelectQuery) =
     let fields = typeof<'a> |> Reflection.getFields
     // extract metadata
@@ -64,22 +73,22 @@ let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:stri
     let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList
     let query : string = evalUpdateQuery fields outputFields meta q
     query, pars
-    
+
 let update<'a> evalUpdateQuery (q:UpdateQuery<'a>) =
     let fields = typeof<'a> |> Reflection.getFields
-    _update evalUpdateQuery q fields [] 
-    
+    _update evalUpdateQuery q fields []
+
 let updateOutput<'Input, 'Output> evalUpdateQuery (q:UpdateQuery<'Input>) =
     let fields = typeof<'Input> |> Reflection.getFields
     let outputFields = typeof<'Output> |> Reflection.getFields
-    _update evalUpdateQuery q fields outputFields 
+    _update evalUpdateQuery q fields outputFields
 
 let private _delete evalDeleteQuery (q:DeleteQuery) outputFields =
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
     let pars = (WhereAnalyzer.extractWhereParams meta) |> Map.ofList
     let query : string = evalDeleteQuery outputFields meta q
     query, pars
-    
+
 let delete evalDeleteQuery (q:DeleteQuery) = _delete evalDeleteQuery q []
 
 let deleteOutput<'Output> evalDeleteQuery (q:DeleteQuery) =
